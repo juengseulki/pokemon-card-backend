@@ -1,21 +1,11 @@
 import { CardGrade, CardStatus, Prisma } from '@prisma/client';
 import prisma from '../configs/prisma.js';
 import AppError from '../utils/AppError.js';
+import { CARD_GRADES, CARD_TYPES } from '../constants/tcgdex.js';
 
-const GRADES = ['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY'];
+const GRADES = CARD_GRADES;
 
-const ALLOWED_GENRES = [
-  'ALBUM',
-  'SPECIAL',
-  'FAN_SIGN',
-  'SEASON_GREETING',
-  'FAN_MEETING',
-  'CONCERT',
-  'MD',
-  'COLLAB',
-  'FANCLUB',
-  'ETC',
-];
+const ALLOWED_TYPES = CARD_TYPES;
 
 const getMonthlyCreatePeriod = () => {
   const now = new Date();
@@ -44,7 +34,7 @@ export const getMyCardsService = async ({
   userId,
   keyword,
   grade,
-  genre,
+  type,
   page,
   limit,
   sort,
@@ -59,7 +49,7 @@ export const getMyCardsService = async ({
       },
     }),
     ...(grade && { grade }),
-    ...(genre && { genre }),
+    ...(type && { type }),
     cardCopies: {
       some: {
         ownerId: userId,
@@ -106,7 +96,7 @@ export const getMyCardsService = async ({
         name: true,
         imageUrl: true,
         grade: true,
-        genre: true,
+        type: true,
         initialPrice: true,
         createdAt: true,
         creator: {
@@ -173,7 +163,7 @@ export const getMyCardsService = async ({
     name: card.name,
     imageUrl: card.imageUrl,
     grade: card.grade,
-    genre: card.genre,
+    type: card.type,
     creatorNickname: card.creator.nickname,
     ownerNickname: card.cardCopies[0]?.owner?.nickname ?? card.creator.nickname,
     initialPrice: card.initialPrice,
@@ -206,7 +196,7 @@ export const postMyCardsService = async ({
   description,
   imageUrl,
   grade,
-  genre,
+  type,
   initialPrice,
   totalQuantity,
 }) => {
@@ -226,12 +216,12 @@ export const postMyCardsService = async ({
     throw new AppError(400, 'INVALID_GRADE', '유효하지 않은 등급입니다.');
   }
 
-  if (!genre) {
-    throw new AppError(400, 'MISSING_GENRE', '장르를 입력해 주세요.');
+  if (!type) {
+    throw new AppError(400, 'MISSING_TYPE', '타입을 입력해 주세요.');
   }
 
-  if (!ALLOWED_GENRES.includes(genre)) {
-    throw new AppError(400, 'INVALID_GENRE', '유효하지 않은 장르입니다.');
+  if (!ALLOWED_TYPES.includes(type)) {
+    throw new AppError(400, 'INVALID_TYPE', '유효하지 않은 타입입니다.');
   }
 
   if (!description) {
@@ -278,7 +268,7 @@ export const postMyCardsService = async ({
         description,
         imageUrl,
         grade,
-        genre,
+        type,
         totalQuantity,
         initialPrice,
         creatorId: userId,
@@ -305,7 +295,7 @@ export const postMyCardsService = async ({
     description: result.description,
     imageUrl: result.imageUrl,
     grade: result.grade,
-    genre: result.genre,
+    type: result.type,
     totalQuantity: result.totalQuantity,
     initialPrice: result.initialPrice,
     creatorId: result.creatorId,
@@ -318,7 +308,7 @@ export const getMyTradesService = async ({
   userId,
   keyword,
   grade,
-  genre,
+  type,
   tradeType,
   isSoldOut,
   page,
@@ -333,7 +323,7 @@ export const getMyTradesService = async ({
     userId,
     tradeType,
     grade,
-    genre,
+    type,
     keyword,
     isSoldOut,
     page,
@@ -365,7 +355,7 @@ export const getMyTradesService = async ({
       },
     }),
     ...(grade && { grade }),
-    ...(genre && { genre }),
+    ...(type && { type }),
   };
   //console.log('[photoCardWhere]', photoCardWhere);
 
@@ -404,8 +394,8 @@ export const getMyTradesService = async ({
       ? Prisma.sql`AND pc."grade" = ${grade}::"CardGrade"`
       : Prisma.empty;
 
-    const genreCondition = genre
-      ? Prisma.sql`AND pc."genre" = ${genre}::"CardGenre"`
+    const typeCondition = type
+      ? Prisma.sql`AND pc."type" = ${type}::"CardType"`
       : Prisma.empty;
 
     const keywordCondition = keyword
@@ -424,7 +414,7 @@ export const getMyTradesService = async ({
       WHERE s."sellerId" = ${userId}
         AND ${saleStatusCondition}
         ${gradeCondition}
-        ${genreCondition}
+        ${typeCondition}
         ${keywordCondition}
 
       UNION ALL
@@ -439,7 +429,7 @@ export const getMyTradesService = async ({
       WHERE ep."proposerId" = ${userId}
         AND ep."status" = 'PENDING'
         ${gradeCondition}
-        ${genreCondition}
+        ${typeCondition}
         ${keywordCondition}
     ) AS trades
     ORDER BY "createdAt" DESC
@@ -672,7 +662,7 @@ export const getMyTradesService = async ({
           },
           select: {
             status: true,
-            photoCard: { select: { grade: true, genre: true } },
+            photoCard: { select: { grade: true, type: true } },
           },
         })
       : [],
@@ -685,7 +675,7 @@ export const getMyTradesService = async ({
           },
           select: {
             offeredCardCopy: {
-              select: { photoCard: { select: { grade: true, genre: true } } },
+              select: { photoCard: { select: { grade: true, type: true } } },
             },
           },
         })
@@ -695,13 +685,13 @@ export const getMyTradesService = async ({
   const allFilteredItems = [
     ...allFilteredSales.map((s) => ({
       grade: s.photoCard?.grade,
-      genre: s.photoCard?.genre,
+      type: s.photoCard?.type,
       tradeType: 'SALE',
       status: s.status,
     })),
     ...allFilteredExchanges.map((e) => ({
       grade: e.offeredCardCopy?.photoCard?.grade,
-      genre: e.offeredCardCopy?.photoCard?.genre,
+      type: e.offeredCardCopy?.photoCard?.type,
       tradeType: 'EXCHANGE',
       status: 'ON_SALE',
     })),
@@ -715,20 +705,20 @@ export const getMyTradesService = async ({
         .length,
       LEGENDARY: allFilteredItems.filter((i) => i.grade === 'LEGENDARY').length,
     },
-    genres: {
-      ALBUM: allFilteredItems.filter((i) => i.genre === 'ALBUM').length,
-      SPECIAL: allFilteredItems.filter((i) => i.genre === 'SPECIAL').length,
-      FAN_SIGN: allFilteredItems.filter((i) => i.genre === 'FAN_SIGN').length,
+    types: {
+      ALBUM: allFilteredItems.filter((i) => i.type === 'ALBUM').length,
+      SPECIAL: allFilteredItems.filter((i) => i.type === 'SPECIAL').length,
+      FAN_SIGN: allFilteredItems.filter((i) => i.type === 'FAN_SIGN').length,
       SEASON_GREETING: allFilteredItems.filter(
-        (i) => i.genre === 'SEASON_GREETING'
+        (i) => i.type === 'SEASON_GREETING'
       ).length,
-      FAN_MEETING: allFilteredItems.filter((i) => i.genre === 'FAN_MEETING')
+      FAN_MEETING: allFilteredItems.filter((i) => i.type === 'FAN_MEETING')
         .length,
-      CONCERT: allFilteredItems.filter((i) => i.genre === 'CONCERT').length,
-      MD: allFilteredItems.filter((i) => i.genre === 'MD').length,
-      COLLAB: allFilteredItems.filter((i) => i.genre === 'COLLAB').length,
-      FANCLUB: allFilteredItems.filter((i) => i.genre === 'FANCLUB').length,
-      ETC: allFilteredItems.filter((i) => i.genre === 'ETC').length,
+      CONCERT: allFilteredItems.filter((i) => i.type === 'CONCERT').length,
+      MD: allFilteredItems.filter((i) => i.type === 'MD').length,
+      COLLAB: allFilteredItems.filter((i) => i.type === 'COLLAB').length,
+      FANCLUB: allFilteredItems.filter((i) => i.type === 'FANCLUB').length,
+      ETC: allFilteredItems.filter((i) => i.type === 'ETC').length,
     },
     tradeTypes: {
       SALE: allFilteredItems.filter((i) => i.tradeType === 'SALE').length,
@@ -796,7 +786,7 @@ const getFormattedSales = ({ sales }) => {
       name: sale.photoCard.name,
       imageUrl: sale.photoCard.imageUrl,
       grade: sale.photoCard.grade,
-      genre: sale.photoCard.genre,
+      type: sale.photoCard.type,
       quantity: activeSaleItems.length,
       count: activeSaleItems.length,
       status: sale.status,
@@ -828,7 +818,7 @@ const getFormattedExchanges = ({ exchangeProposals }) => {
       name: photoCard.name,
       imageUrl: photoCard.imageUrl,
       grade: photoCard.grade,
-      genre: photoCard.genre,
+      type: photoCard.type,
       quantity: 1,
       count: 1,
       status: proposal.status,

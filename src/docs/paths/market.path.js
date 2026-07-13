@@ -24,7 +24,7 @@ export const marketPaths = {
         },
 
         {
-          name: 'genre',
+          name: 'type',
           in: 'query',
           schema: { type: 'string' },
         },

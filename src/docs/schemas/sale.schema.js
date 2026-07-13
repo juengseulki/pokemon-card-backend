@@ -8,7 +8,7 @@ export const saleSchemas = {
       description: { type: 'string', example: '스페인 여행 포토카드입니다.' },
       imageUrl: { type: 'string', example: 'https://image.com/card.png' },
       grade: { type: 'string', example: 'COMMON' },
-      genre: { type: 'string', example: 'ALBUM' },
+      type: { type: 'string', example: 'FIRE' },
       price: { type: 'number', example: 5 },
       status: {
         type: 'string',
@@ -35,10 +35,10 @@ export const saleSchemas = {
         nullable: true,
         example: 'RARE',
       },
-      exchangeGenre: {
+      exchangeType: {
         type: 'string',
         nullable: true,
-        example: 'ALBUM',
+        example: 'FIRE',
       },
       exchangeDescription: {
         type: 'string',

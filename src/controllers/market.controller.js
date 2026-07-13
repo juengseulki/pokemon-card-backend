@@ -12,7 +12,7 @@ export const getMarketCards = async (req, res, next) => {
     const {
       keyword,
       grade,
-      genre,
+      type,
       cursor,
       limit = 15,
       sort = 'latest',
@@ -27,7 +27,7 @@ export const getMarketCards = async (req, res, next) => {
     const result = await getMarketCardsService({
       keyword,
       grade,
-      genre,
+      type,
       cursor,
       limit: safeLimit,
       sort,
@@ -45,12 +45,12 @@ export const getMarketCards = async (req, res, next) => {
 
 export const getMarketCounts = async (req, res, next) => {
   try {
-    const { keyword, grade, genre, saleStatus = 'all' } = req.query;
+    const { keyword, grade, type, saleStatus = 'all' } = req.query;
 
     const result = await getMarketCountsService({
       keyword,
       grade,
-      genre,
+      type,
       saleStatus,
     });
 

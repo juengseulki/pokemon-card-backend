@@ -14,7 +14,7 @@ export const getMyCards = async (req, res, next) => {
     const {
       keyword,
       grade,
-      genre,
+      type,
       page = 1,
       limit = 15,
       sort = 'latest',
@@ -24,7 +24,7 @@ export const getMyCards = async (req, res, next) => {
       userId,
       keyword,
       grade,
-      genre,
+      type,
       page: Number(page),
       limit: Math.min(Number(limit), 50),
       sort,
@@ -47,7 +47,7 @@ export const postMyCards = async (req, res, next) => {
       throw new AppError(400, 'FILE_REQUIRED', '파일을 등록해 주세요.');
     }
 
-    const { name, description, grade, genre, initialPrice, totalQuantity } =
+    const { name, description, grade, type, initialPrice, totalQuantity } =
       req.body;
 
     const uploadResult = await cloudinary.uploader.upload(
@@ -62,7 +62,7 @@ export const postMyCards = async (req, res, next) => {
       description,
       imageUrl,
       grade,
-      genre,
+      type,
       initialPrice: Number(initialPrice),
       totalQuantity: Number(totalQuantity),
     });
@@ -83,7 +83,7 @@ export const getMyTrades = async (req, res, next) => {
     const {
       keyword,
       grade,
-      genre,
+      type,
       tradeType,
       isSoldOut,
       page = 1,
@@ -95,7 +95,7 @@ export const getMyTrades = async (req, res, next) => {
       userId,
       keyword: keyword || undefined,
       grade: grade || undefined,
-      genre: genre || undefined,
+      type: type || undefined,
       tradeType: tradeType || undefined,
       isSoldOut: isSoldOut || undefined,
       page: Number(page),

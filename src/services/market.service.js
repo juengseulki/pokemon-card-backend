@@ -10,21 +10,10 @@ import saleItemRepository from '../repositories/saleItem.repository.js';
 import cardCopyRepository from '../repositories/cardCopy.repository.js';
 import { addPoint, usePoint } from './point.service.js';
 import { createNotification } from './notification.service.js';
+import { CARD_GRADES, CARD_TYPES } from '../constants/tcgdex.js';
 
-const GRADES = ['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY'];
-
-const GENRES = [
-  'ALBUM',
-  'SPECIAL',
-  'FAN_SIGN',
-  'SEASON_GREETING',
-  'FAN_MEETING',
-  'CONCERT',
-  'MD',
-  'COLLAB',
-  'FANCLUB',
-  'ETC',
-];
+const GRADES = CARD_GRADES;
+const TYPES = CARD_TYPES;
 
 const parsePriceCursor = (cursor) => {
   if (!cursor) return null;
@@ -41,7 +30,7 @@ const isPriceSort = (sort) => sort === 'priceAsc' || sort === 'priceDesc';
 const isSoldOutSale = (sale) =>
   sale.status === SaleStatus.SOLD_OUT || sale._count.saleItems === 0;
 
-const buildMarketWhere = ({ keyword, grade, genre, saleStatus }) => {
+const buildMarketWhere = ({ keyword, grade, type, saleStatus }) => {
   const photoCardWhere = {
     ...(keyword && {
       name: {
@@ -50,7 +39,7 @@ const buildMarketWhere = ({ keyword, grade, genre, saleStatus }) => {
       },
     }),
     ...(grade && { grade }),
-    ...(genre && { genre }),
+    ...(type && { type }),
   };
 
   let saleStatusWhere = {
@@ -153,7 +142,7 @@ const getMarketCounts = async (where) => {
   const baseWhere = { ...where };
   delete baseWhere.photoCard;
 
-  const [onSaleCount, soldOutCount, gradeCounts, genreCounts] =
+  const [onSaleCount, soldOutCount, gradeCounts, typeCounts] =
     await Promise.all([
       prisma.sale.count({
         where: {
@@ -204,25 +193,25 @@ const getMarketCounts = async (where) => {
       ),
 
       Promise.all(
-        GENRES.map(async (genre) => {
+        TYPES.map(async (type) => {
           const count = await prisma.sale.count({
             where: {
               ...baseWhere,
               photoCard: {
                 ...photoCardWhere,
-                genre,
+                type,
               },
             },
           });
 
-          return [genre, count];
+          return [type, count];
         })
       ),
     ]);
 
   return {
     grades: Object.fromEntries(gradeCounts),
-    genres: Object.fromEntries(genreCounts),
+    types: Object.fromEntries(typeCounts),
     saleStatuses: {
       onSale: onSaleCount,
       soldOut: soldOutCount,
@@ -240,7 +229,7 @@ const mapMarketCard = (sale) => {
     name: sale.photoCard.name,
     imageUrl: sale.photoCard.imageUrl,
     grade: sale.photoCard.grade,
-    genre: sale.photoCard.genre,
+    type: sale.photoCard.type,
     price: sale.price,
     status: sale.status,
     isSoldOut: sale.status === SaleStatus.SOLD_OUT || remainingQuantity === 0,
@@ -257,12 +246,12 @@ export const getMarketCardsService = async ({
   limit = 15,
   keyword,
   grade,
-  genre,
+  type,
   sort = 'latest',
   saleStatus,
 }) => {
   const take = Number(limit);
-  const where = buildMarketWhere({ keyword, grade, genre, saleStatus });
+  const where = buildMarketWhere({ keyword, grade, type, saleStatus });
   const orderBy = buildMarketOrderBy(sort);
   const cursorWhere = buildMarketCursorWhere({ cursor, sort });
 
@@ -290,7 +279,7 @@ export const getMarketCardsService = async ({
           name: true,
           imageUrl: true,
           grade: true,
-          genre: true,
+          type: true,
           totalQuantity: true,
           creator: {
             select: {
@@ -336,13 +325,13 @@ export const getMarketCardsService = async ({
 export const getMarketCountsService = async ({
   keyword,
   grade,
-  genre,
+  type,
   saleStatus,
 }) => {
   const where = buildMarketWhere({
     keyword,
     grade,
-    genre,
+    type,
     saleStatus,
   });
 
@@ -368,7 +357,7 @@ export const getMarketCardDetailService = async (saleId) => {
       status: true,
       createdAt: true,
       exchangeGrade: true,
-      exchangeGenre: true,
+      exchangeType: true,
       exchangeDescription: true,
       seller: {
         select: {
@@ -382,7 +371,7 @@ export const getMarketCardDetailService = async (saleId) => {
           description: true,
           imageUrl: true,
           grade: true,
-          genre: true,
+          type: true,
           totalQuantity: true,
           creator: {
             select: {
@@ -419,7 +408,7 @@ export const getMarketCardDetailService = async (saleId) => {
     description: sale.photoCard.description,
     imageUrl: sale.photoCard.imageUrl,
     grade: sale.photoCard.grade,
-    genre: sale.photoCard.genre,
+    type: sale.photoCard.type,
     price: sale.price,
     status: sale.status,
     isSoldOut: sale.status === SaleStatus.SOLD_OUT || remainingQuantity === 0,
@@ -428,7 +417,7 @@ export const getMarketCardDetailService = async (saleId) => {
     sellerNickname: sale.seller.nickname,
     creatorNickname: sale.photoCard.creator.nickname,
     exchangeGrade: sale.exchangeGrade,
-    exchangeGenre: sale.exchangeGenre,
+    exchangeType: sale.exchangeType,
     exchangeDescription: sale.exchangeDescription,
     createdAt: sale.createdAt,
   };
