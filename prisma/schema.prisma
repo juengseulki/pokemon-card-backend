@@ -1,0 +1,402 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CardGrade {
+  COMMON
+  RARE
+  SUPER_RARE
+  LEGENDARY
+}
+
+enum CardGenre {
+  ALBUM
+  SPECIAL
+  FAN_SIGN
+  SEASON_GREETING
+  FAN_MEETING
+  CONCERT
+  MD
+  COLLAB
+  FANCLUB
+  ETC
+}
+
+enum CardStatus {
+  OWNED
+  ON_SALE
+  EXCHANGING
+  SOLD
+  DELETED
+}
+
+enum SaleStatus {
+  ON_SALE
+  SOLD_OUT
+  CANCELED
+}
+
+enum ExchangeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+enum NotificationType {
+  PURCHASE
+  EXCHANGE_REQUEST
+  EXCHANGE_ACCEPTED
+  EXCHANGE_REJECTED
+  SOLD_OUT
+  RANDOM_BOX
+}
+
+enum PointReason {
+  SIGN_UP
+  PURCHASE
+  SALE
+  RANDOM_BOX
+  REFUND
+  ADMIN
+}
+
+enum OAuthProvider {
+  GOOGLE
+  KAKAO
+  NAVER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum NotificationTargetType {
+  SALE
+  PURCHASE
+  EXCHANGE
+  CARD
+  USER
+}
+
+model RefreshToken {
+  id        Int    @id @default(autoincrement())
+  userId    String @unique
+  tokenHash String @unique
+
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model OAuthAccount {
+  id Int @id @default(autoincrement())
+
+  userId String
+
+  provider          OAuthProvider
+  providerAccountId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String?
+  nickname String  @unique
+
+  point Point?
+
+  refreshTokens RefreshToken[]
+  oauthAccounts OAuthAccount[]
+
+  createdCards PhotoCard[]
+  ownedCards   CardCopy[]
+
+  sales     Sale[]
+  purchases Purchase[]
+
+  exchangeProposals ExchangeProposal[]
+
+  notifications      Notification[]
+  pointHistories     PointHistory[]
+  randomBoxHistories RandomBoxHistory[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RandomBoxHistory {
+  id     Int    @id @default(autoincrement())
+  userId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id Int @id @default(autoincrement())
+
+  tableName String
+  recordId  String
+  action    AuditAction
+
+  beforeData Json?
+  afterData  Json?
+
+  changedById String?
+  changedBy   User? @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([tableName, recordId])
+  @@index([action])
+  @@index([changedById])
+}
+
+model Point {
+  id Int @id @default(autoincrement())
+
+  userId  String @unique
+  balance Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PhotoCard {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String
+  imageUrl    String
+
+  grade CardGrade
+  genre CardGenre
+
+  totalQuantity Int
+  initialPrice  Int
+
+  creatorId String
+  creator   User   @relation(fields: [creatorId], references: [id])
+
+  cardCopies CardCopy[]
+
+  sales Sale[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creatorId])
+  @@index([grade])
+  @@index([genre])
+  @@index([createdAt])
+}
+
+model CardCopy {
+  id Int @id @default(autoincrement())
+
+  photoCardId Int
+  ownerId     String
+
+  status CardStatus @default(OWNED)
+
+  photoCard PhotoCard @relation(fields: [photoCardId], references: [id])
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  saleItems SaleItem[]
+
+  exchangeOffers ExchangeProposal[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  serialNumber String   @unique
+
+  @@index([ownerId])
+  @@index([photoCardId])
+  @@index([status])
+  @@index([ownerId, status])
+  @@index([photoCardId, ownerId, status])
+}
+
+model Sale {
+  id Int @id @default(autoincrement())
+
+  sellerId    String
+  photoCardId Int
+
+  price Int
+
+  status SaleStatus @default(ON_SALE)
+
+  seller User @relation(fields: [sellerId], references: [id])
+
+  photoCard PhotoCard @relation(fields: [photoCardId], references: [id])
+
+  saleItems SaleItem[]
+
+  purchases Purchase[]
+
+  exchangeProposals ExchangeProposal[]
+
+  exchangeGrade       CardGrade?
+  exchangeGenre       CardGenre?
+  exchangeDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([photoCardId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([price])
+  @@index([status, id])
+  @@index([price, id])
+}
+
+model SaleItem {
+  id Int @id @default(autoincrement())
+
+  saleId     Int
+  cardCopyId Int
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  cardCopy CardCopy @relation(fields: [cardCopyId], references: [id])
+
+  createdAt    DateTime      @default(now())
+  purchaseItem PurchaseItem?
+
+  @@index([saleId])
+  @@index([cardCopyId])
+}
+
+model Purchase {
+  id Int @id @default(autoincrement())
+
+  buyerId String
+  saleId  Int
+
+  quantity   Int
+  totalPrice Int
+
+  buyer User @relation(fields: [buyerId], references: [id])
+  sale  Sale @relation(fields: [saleId], references: [id])
+
+  items PurchaseItem[]
+
+  createdAt DateTime @default(now())
+
+  @@index([buyerId])
+  @@index([saleId])
+}
+
+model PurchaseItem {
+  id Int @id @default(autoincrement())
+
+  purchaseId Int
+  saleItemId Int @unique
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  saleItem SaleItem @relation(fields: [saleItemId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model ExchangeProposal {
+  id Int @id @default(autoincrement())
+
+  saleId     Int
+  proposerId String
+
+  offeredCardCopyId Int
+
+  description String @default("")
+
+  status ExchangeStatus @default(PENDING)
+
+  sale Sale @relation(fields: [saleId], references: [id])
+
+  proposer User @relation(fields: [proposerId], references: [id])
+
+  offeredCardCopy CardCopy @relation(fields: [offeredCardCopyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([saleId])
+  @@index([proposerId])
+  @@index([status])
+  @@index([proposerId, status])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId  String
+  type    NotificationType
+  content String
+  isRead  Boolean          @default(false)
+
+  linkUrl    String? // 클릭 시 이동할 프론트 라우트
+  targetId   Int? // 관련 데이터 ID
+  targetType NotificationTargetType? // SALE, EXCHANGE, CARD 등
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+model PointHistory {
+  id Int @id @default(autoincrement())
+
+  userId String
+
+  amount Int
+
+  reason PointReason
+
+  description String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
