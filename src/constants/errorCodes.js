@@ -149,11 +149,9 @@ export const ERROR_CODES = {
     errorCode: 'PHOTO_CARD_GRADE_REQUIRED',
     message: customMsg,
   }),
-  PHOTO_CARD_GENRE_REQUIRED: (
-    customMsg = '포토카드 장르를 선택해 주세요.'
-  ) => ({
+  PHOTO_CARD_TYPE_REQUIRED: (customMsg = '포토카드 장르를 선택해 주세요.') => ({
     httpStatus: 400,
-    errorCode: 'PHOTO_CARD_GENRE_REQUIRED',
+    errorCode: 'PHOTO_CARD_TYPE_REQUIRED',
     message: customMsg,
   }),
   PHOTO_CARD_QUANTITY_REQUIRED: (

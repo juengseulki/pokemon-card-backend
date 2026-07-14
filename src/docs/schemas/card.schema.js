@@ -29,22 +29,56 @@ export const cardSchemas = {
         example: 'COMMON',
       },
 
-      genre: {
+      type: {
         type: 'string',
         enum: [
-          'ALBUM',
-          'SPECIAL',
-          'FAN_SIGN',
-          'SEASON_GREETING',
-          'FAN_MEETING',
-          'CONCERT',
-          'MD',
-          'COLLAB',
-          'FAN_CLUB',
-          'ETC',
+          'GRASS',
+          'FIRE',
+          'WATER',
+          'LIGHTNING',
+          'PSYCHIC',
+          'FIGHTING',
+          'DARKNESS',
+          'METAL',
+          'FAIRY',
+          'DRAGON',
+          'COLORLESS',
+          'TRAINER',
+          'ENERGY',
         ],
-        example: 'ALBUM',
+        example: 'FIRE',
       },
+
+      rarity: {
+        type: 'string',
+        nullable: true,
+        description: 'TCGdex 원본 rarity 문자열',
+        example: 'Illustration Rare',
+      },
+
+      tcgdexId: {
+        type: 'string',
+        nullable: true,
+        description: 'TCGdex 카드 ID. null이면 유저 생성 카드',
+        example: 'swsh3-136',
+      },
+
+      category: {
+        type: 'string',
+        enum: ['POKEMON', 'TRAINER', 'ENERGY'],
+        example: 'POKEMON',
+      },
+
+      setId: { type: 'string', nullable: true, example: 'swsh3' },
+      setName: { type: 'string', nullable: true, example: 'Darkness Ablaze' },
+      illustrator: {
+        type: 'string',
+        nullable: true,
+        example: 'tetsuya koizumi',
+      },
+      hp: { type: 'number', nullable: true, example: 110 },
+      dexId: { type: 'number', nullable: true, example: 162 },
+      stage: { type: 'string', nullable: true, example: 'Stage1' },
 
       totalQuantity: {
         type: 'number',
@@ -81,7 +115,7 @@ export const cardSchemas = {
       'description',
       'imageUrl',
       'grade',
-      'genre',
+      'type',
       'totalQuantity',
       'initialPrice',
     ],
@@ -107,9 +141,9 @@ export const cardSchemas = {
         example: 'COMMON',
       },
 
-      genre: {
+      type: {
         type: 'string',
-        example: 'ALBUM',
+        example: 'FIRE',
       },
 
       totalQuantity: {

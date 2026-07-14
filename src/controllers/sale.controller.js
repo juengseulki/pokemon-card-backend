@@ -15,7 +15,7 @@ export const createSale = async (req, res, next) => {
       price,
       quantity,
       exchangeGrade,
-      exchangeGenre,
+      exchangeType,
       exchangeDescription,
     } = req.body;
 
@@ -44,7 +44,7 @@ export const createSale = async (req, res, next) => {
       price: Number(price),
       quantity: Number(quantity),
       exchangeGrade,
-      exchangeGenre,
+      exchangeType,
       exchangeDescription,
       userId,
     });

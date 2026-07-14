@@ -2,28 +2,14 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import fs from 'fs/promises';
 import path from 'path';
+import {
+  CARD_GRADES,
+  CARD_TYPES,
+  tcgdexCardToPhotoCard,
+} from '../src/constants/tcgdex.js';
+import { fetchTcgdexCards } from './tcgdexFetch.js';
 
 const prisma = new PrismaClient();
-
-const GRADE_MAP = {
-  common: 'COMMON',
-  rare: 'RARE',
-  'super rare': 'SUPER_RARE',
-  legendary: 'LEGENDARY',
-};
-
-const GENRE_MAP = {
-  앨범: 'ALBUM',
-  특전: 'SPECIAL',
-  팬싸: 'FAN_SIGN',
-  시즌그리팅: 'SEASON_GREETING',
-  팬미팅: 'FAN_MEETING',
-  콘서트: 'CONCERT',
-  MD: 'MD',
-  콜라보: 'COLLAB',
-  팬클럽: 'FANCLUB',
-  기타: 'ETC',
-};
 
 async function readJson(fileName) {
   const filePath = path.join(process.cwd(), 'prisma', 'seed-data', fileName);
@@ -47,12 +33,12 @@ async function resetDatabase() {
 }
 
 function validateCardSeed(card) {
-  if (!GRADE_MAP[card.grade]) {
+  if (!CARD_GRADES.includes(card.grade)) {
     throw new Error(`지원하지 않는 등급입니다: ${card.grade}`);
   }
 
-  if (!GENRE_MAP[card.genre]) {
-    throw new Error(`지원하지 않는 장르입니다: ${card.genre}`);
+  if (!CARD_TYPES.includes(card.type)) {
+    throw new Error(`지원하지 않는 타입입니다: ${card.type}`);
   }
 
   if (card.remainingQuantity > card.totalQuantity) {
@@ -110,8 +96,17 @@ async function createPhotoCards(cards, userIdMap) {
           name: card.name,
           description: card.description,
           imageUrl: card.imageUrl,
-          grade: GRADE_MAP[card.grade],
-          genre: GENRE_MAP[card.genre],
+          grade: card.grade,
+          type: card.type,
+          rarity: card.rarity,
+          tcgdexId: null,
+          category: card.category,
+          setId: card.setId,
+          setName: card.setName,
+          illustrator: card.illustrator,
+          hp: card.hp,
+          dexId: card.dexId,
+          stage: card.stage,
           totalQuantity: card.totalQuantity,
           initialPrice: card.price,
           creatorId,
@@ -146,7 +141,7 @@ async function createPhotoCards(cards, userIdMap) {
           price: card.price,
           status: 'ON_SALE',
           exchangeGrade: null,
-          exchangeGenre: null,
+          exchangeType: null,
           exchangeDescription: null,
         },
       });
@@ -176,9 +171,44 @@ async function createPhotoCards(cards, userIdMap) {
   }
 }
 
+function toSeedCards(tcgdexCards, users) {
+  return tcgdexCards.map((card, index) => {
+    const mapped = tcgdexCardToPhotoCard(card);
+
+    const owner = users[index % users.length];
+
+    const totalQuantity = mapped.totalQuantity;
+    const remainingQuantity =
+      index % 5 === 0 ? 0 : Math.max(1, Math.ceil(totalQuantity / 2));
+
+    return {
+      ...mapped,
+      userId: owner.id,
+      price: mapped.initialPrice,
+      totalQuantity,
+      remainingQuantity,
+    };
+  });
+}
+
 async function main() {
   const users = await readJson('users.json');
-  const cards = await readJson('cards.json');
+
+  const setIds = (process.env.SEED_SETS ?? 'swsh3,sv1')
+    .split(',')
+    .filter(Boolean);
+  const lang = process.env.SEED_LANG ?? 'en';
+  const limit = Number(process.env.SEED_CARD_COUNT ?? 100);
+
+  console.log(
+    `TCGdex에서 카드 수집 중 (lang=${lang}, sets=${setIds.join(',')})...`
+  );
+
+  const tcgdexCards = await fetchTcgdexCards({ setIds, lang, limit });
+
+  console.log(`카드 ${tcgdexCards.length}장 수집 완료.`);
+
+  const cards = toSeedCards(tcgdexCards, users);
 
   await resetDatabase();
 
@@ -186,7 +216,7 @@ async function main() {
 
   await createPhotoCards(cards, userIdMap);
 
-  console.log('Seed 완료!');
+  console.log(`Seed 완료! 유저 ${users.length}명 / 카드 ${cards.length}장`);
 }
 
 main()

@@ -22,7 +22,7 @@ export const galleryPaths = {
           schema: { type: 'string' },
         },
         {
-          name: 'genre',
+          name: 'type',
           in: 'query',
           schema: { type: 'string' },
         },

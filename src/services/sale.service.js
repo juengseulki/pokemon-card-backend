@@ -13,7 +13,7 @@ export const createSale = async ({
   price,
   quantity,
   exchangeGrade,
-  exchangeGenre,
+  exchangeType,
   exchangeDescription,
   userId,
 }) => {
@@ -59,7 +59,7 @@ export const createSale = async ({
       photoCardId: parsedPhotoCardId,
       price: parsedPrice,
       exchangeGrade,
-      exchangeGenre,
+      exchangeType,
       exchangeDescription,
       tx,
     });
@@ -112,7 +112,7 @@ export const modifySale = async ({ saleId, photoCardId, userId, data }) => {
       quantity,
       price,
       exchangeGrade,
-      exchangeGenre,
+      exchangeType,
       exchangeDescription,
     } = data;
 
@@ -131,7 +131,7 @@ export const modifySale = async ({ saleId, photoCardId, userId, data }) => {
     }
 
     if (exchangeGrade !== undefined) modifyData.exchangeGrade = exchangeGrade;
-    if (exchangeGenre !== undefined) modifyData.exchangeGenre = exchangeGenre;
+    if (exchangeType !== undefined) modifyData.exchangeType = exchangeType;
     if (exchangeDescription !== undefined) {
       modifyData.exchangeDescription = exchangeDescription;
     }

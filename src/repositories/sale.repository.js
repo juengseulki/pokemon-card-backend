@@ -7,7 +7,7 @@ const saleRepository = {
     photoCardId,
     price,
     exchangeGrade,
-    exchangeGenre,
+    exchangeType,
     exchangeDescription,
     tx,
   }) => {
@@ -18,7 +18,7 @@ const saleRepository = {
         photoCardId: Number(photoCardId),
         price: Number(price),
         exchangeGrade,
-        exchangeGenre,
+        exchangeType,
         exchangeDescription,
       },
     });

@@ -19,17 +19,28 @@ enum CardGrade {
   LEGENDARY
 }
 
-enum CardGenre {
-  ALBUM
-  SPECIAL
-  FAN_SIGN
-  SEASON_GREETING
-  FAN_MEETING
-  CONCERT
-  MD
-  COLLAB
-  FANCLUB
-  ETC
+/// 포켓몬 에너지 타입 (구 CardGenre 대체)
+enum CardType {
+  GRASS
+  FIRE
+  WATER
+  LIGHTNING
+  PSYCHIC
+  FIGHTING
+  DARKNESS
+  METAL
+  FAIRY
+  DRAGON
+  COLORLESS
+  TRAINER
+  ENERGY
+}
+
+/// TCGdex category (Pokemon / Trainer / Energy)
+enum CardCategory {
+  POKEMON
+  TRAINER
+  ENERGY
 }
 
 enum CardStatus {
@@ -202,13 +213,27 @@ model PhotoCard {
   imageUrl    String
 
   grade CardGrade
-  genre CardGenre
+  /// 포켓몬 타입. 구 genre 자리
+  type  CardType
+  rarity String?
+
+  /// TCGdex 카드 고유 ID (예: "swsh3-136"). 공식 카드만 값이 있음
+  tcgdexId String? @unique
+
+  category    CardCategory @default(POKEMON)
+  setId       String?
+  setName     String?
+  illustrator String?
+  hp          Int?
+  dexId       Int?
+  stage       String?
 
   totalQuantity Int
   initialPrice  Int
 
-  creatorId String
-  creator   User   @relation(fields: [creatorId], references: [id])
+  /// null이면 TCGdex 공식 카드, 값이 있으면 유저 생성 카드
+  creatorId String?
+  creator   User?   @relation(fields: [creatorId], references: [id])
 
   cardCopies CardCopy[]
 
@@ -219,7 +244,9 @@ model PhotoCard {
 
   @@index([creatorId])
   @@index([grade])
-  @@index([genre])
+  @@index([type])
+  @@index([rarity])
+  @@index([setId])
   @@index([createdAt])
 }
 
@@ -271,7 +298,7 @@ model Sale {
   exchangeProposals ExchangeProposal[]
 
   exchangeGrade       CardGrade?
-  exchangeGenre       CardGenre?
+  exchangeType        CardType?
   exchangeDescription String?
 
   createdAt DateTime @default(now())
